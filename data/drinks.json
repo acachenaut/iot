@@ -1,0 +1,29 @@
+{
+  "drinks": [
+     {
+       "id" : 1,
+       "name" : "Cafe",
+       "price" : 0.8
+     },
+    {
+       "id" : 2,
+       "name" : "Cafe au lait",
+       "price" : 1
+     },
+     {
+       "id" : 3,
+       "name" : "Coca Cola",
+       "price" : 1.2
+     },
+     {
+       "id" : 4,
+       "name" : "Chocolat chaud",
+       "price" : 1
+     },
+     {
+       "id" : 5,
+       "name" : "IceTea",
+       "price" : 1.2
+     }
+  ]
+}
