@@ -1,0 +1,705 @@
+[
+    {
+        "id": "da1569c66a6c9fab",
+        "type": "tab",
+        "label": "iot",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "7c70bad8645c4635",
+        "type": "mqtt-broker",
+        "name": "COMPANY",
+        "broker": "test.mosquitto.org",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    },
+    {
+        "id": "8bee82dd90c840a9",
+        "type": "mqtt in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "topic": "COMPANY/OpenSpace1/Entrance",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "7c70bad8645c4635",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "f6039b1afd45ef0c",
+                "e9370b5782eef007"
+            ]
+        ]
+    },
+    {
+        "id": "f6039b1afd45ef0c",
+        "type": "fs-ops-access",
+        "z": "da1569c66a6c9fab",
+        "name": "checkFile",
+        "path": "data",
+        "pathType": "str",
+        "filename": "orders.csv",
+        "filenameType": "str",
+        "read": true,
+        "write": true,
+        "throwerror": false,
+        "x": 380,
+        "y": 220,
+        "wires": [
+            [
+                "a29dc0a1f38a0b67"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "4895545e526158b8",
+        "type": "mqtt in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "topic": "COMPANY/OpenSpace1/Order",
+        "qos": "1",
+        "datatype": "auto",
+        "broker": "7c70bad8645c4635",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 460,
+        "wires": [
+            [
+                "cb1e87635c7ca5c3",
+                "8f3245adeeec965a",
+                "a17c38a148be4010",
+                "e891a62ab5392131"
+            ]
+        ]
+    },
+    {
+        "id": "cb1e87635c7ca5c3",
+        "type": "fs-ops-access",
+        "z": "da1569c66a6c9fab",
+        "name": "checkFile",
+        "path": "data",
+        "pathType": "str",
+        "filename": "expenses.json",
+        "filenameType": "str",
+        "read": true,
+        "write": true,
+        "throwerror": false,
+        "x": 380,
+        "y": 460,
+        "wires": [
+            [
+                "25e98c92822b3796"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "071343c68bedb734",
+        "type": "join",
+        "z": "da1569c66a6c9fab",
+        "name": "joinAllMsg",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "4",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 970,
+        "y": 560,
+        "wires": [
+            [
+                "c269c46c8c02d5e9",
+                "7475d2ece901faf7",
+                "3aee5e5c9f617810"
+            ]
+        ]
+    },
+    {
+        "id": "aaafbb6c549751b5",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'expenses';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 460,
+        "wires": [
+            [
+                "071343c68bedb734"
+            ]
+        ]
+    },
+    {
+        "id": "c269c46c8c02d5e9",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "updateExepensesData",
+        "func": "expensesJson = JSON.parse(msg.payload.expenses);\ndrinksJson = JSON.parse(msg.payload.drinks);\nseparationIndex = msg.payload.order.indexOf(';');\norderBy = msg.payload.order.substr(0,separationIndex);\norderedId = msg.payload.order.substr(separationIndex+1);\nif (expensesJson[orderBy] !== undefined) {\n    for (let drink of drinksJson.drinks) \n    {\n      if (drink.id == orderedId) {\n          expensesJson[orderBy].amount += drink.price;\n      }\n    }\n}\nelse {\n    for (let drink of drinksJson.drinks) \n    {\n      if (drink.id == orderedId) {\n          expensesJson[orderBy] = { amount : drink.price };\n      }\n    }\n    \n}\nmsg.payload = expensesJson;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 580,
+        "wires": [
+            [
+                "fd1d7752941b029b"
+            ]
+        ]
+    },
+    {
+        "id": "8f3245adeeec965a",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'order'\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 720,
+        "wires": [
+            [
+                "071343c68bedb734"
+            ]
+        ]
+    },
+    {
+        "id": "a17c38a148be4010",
+        "type": "fs-ops-access",
+        "z": "da1569c66a6c9fab",
+        "name": "checkFile",
+        "path": "data",
+        "pathType": "str",
+        "filename": "drinks.json",
+        "filenameType": "str",
+        "read": true,
+        "write": true,
+        "throwerror": false,
+        "x": 380,
+        "y": 520,
+        "wires": [
+            [
+                "fa556275bf709618"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "fa556275bf709618",
+        "type": "file in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "filename": "data/drinks.json",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 580,
+        "y": 520,
+        "wires": [
+            [
+                "13debfc1b5861d11"
+            ]
+        ]
+    },
+    {
+        "id": "13debfc1b5861d11",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'drinks';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 520,
+        "wires": [
+            [
+                "071343c68bedb734"
+            ]
+        ]
+    },
+    {
+        "id": "25e98c92822b3796",
+        "type": "file in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "filename": "data/expenses.json",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 590,
+        "y": 460,
+        "wires": [
+            [
+                "aaafbb6c549751b5"
+            ]
+        ]
+    },
+    {
+        "id": "fd1d7752941b029b",
+        "type": "file",
+        "z": "da1569c66a6c9fab",
+        "name": "reWriteExpensesFile",
+        "filename": "data/expenses.json",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 1440,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0da02a2324eb7dfb",
+        "type": "mqtt out",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "topic": "COMPANY/DrinkVendingMachine",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "7c70bad8645c4635",
+        "x": 1420,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "7475d2ece901faf7",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "sendOrder",
+        "func": "drinksJson = JSON.parse(msg.payload.drinks);\nseparationIndex = msg.payload.order.indexOf(';');\norderedId = msg.payload.order.substr(separationIndex+1);\nfor (let drink of drinksJson.drinks) \n    {\n      if (drink.id == orderedId) {\n          msg.payload = drink.name;\n      }\n    }\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 500,
+        "wires": [
+            [
+                "0da02a2324eb7dfb"
+            ]
+        ]
+    },
+    {
+        "id": "b214536334e69e82",
+        "type": "file in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "filename": "data/orders.csv",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 580,
+        "y": 600,
+        "wires": [
+            [
+                "abce4db1a4401ddb"
+            ]
+        ]
+    },
+    {
+        "id": "3aee5e5c9f617810",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "updateOrdersData",
+        "func": "separationIndex = msg.payload.order.indexOf(';');\norderBy = msg.payload.order.substr(0,separationIndex);\norderedId = msg.payload.order.substr(separationIndex+1);\n\nstr = msg.payload.orders;\nconst headers = str.slice(0, str.indexOf(\"\\r\\n\")).split(';');\nconst rows = str.slice(str.indexOf(\"\\n\") + 1).split(\"\\r\\n\");\nconst arr = rows.map(function (row) {\n    const values = row.split(';');\n    const el = headers.reduce(function (object, header, index) {\n      object[header] = values[index];\n      return object;\n    }, {});\n    return el;\n});\n\nvar tab_jour=new Array(\"LUNDI\", \"MARDI\", \"MERCREDI\", \"JEUDI\", \"VENDREDI\");\narr.forEach(line => {\n    if (line.Employee == orderBy && line.DrinkId == orderedId && line['Day'] == tab_jour[new Date().getDay()-1]) {\n        line.Count ++;\n    } \n});\n\nvar csvString = [\n    [\n      \"i\",\n      \"DrinkId\",\n      \"Count\",\n      \"Employee\",\n      \"Day\"\n    ],\n    ...arr.map(item => [\n      1,\n      item.DrinkId,\n      item.Count,\n      item.Employee,\n      item.Day\n    ])\n  ]\n   .map(e => e.join(\";\")) \n   .join(\"\\r\\n\");\n   \nmsg.payload = csvString\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 660,
+        "wires": [
+            [
+                "81e86a7a43f5da1e"
+            ]
+        ]
+    },
+    {
+        "id": "e891a62ab5392131",
+        "type": "fs-ops-access",
+        "z": "da1569c66a6c9fab",
+        "name": "checkFile",
+        "path": "data",
+        "pathType": "str",
+        "filename": "orders.csv",
+        "filenameType": "str",
+        "read": true,
+        "write": true,
+        "throwerror": false,
+        "x": 380,
+        "y": 600,
+        "wires": [
+            [
+                "b214536334e69e82"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "abce4db1a4401ddb",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'orders';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 600,
+        "wires": [
+            [
+                "071343c68bedb734"
+            ]
+        ]
+    },
+    {
+        "id": "81e86a7a43f5da1e",
+        "type": "file",
+        "z": "da1569c66a6c9fab",
+        "name": "reWriteOrdersFile",
+        "filename": "data/orders.csv",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 1430,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5f12ab30e19aa30c",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "isEmployeeInFile",
+        "func": "employee = msg.payload.entrance;\nstr = msg.payload.orders;\n\nconst headers = str.slice(0, str.indexOf(\"\\r\\n\")).split(';');\nconst rows = str.slice(str.indexOf(\"\\n\") + 1).split(\"\\r\\n\");\nconst arr = rows.map(function (row) {\n    const values = row.split(';');\n    const el = headers.reduce(function (object, header, index) {\n      object[header] = values[index];\n      return object;\n    }, {});\n    return el;\n});\n\narr.forEach(line => {\n    if (line.Employee == employee) {\n        msg.payload = true;\n    } \n});\n\nif (msg.payload == true) {\n    return [msg, null];\n}\nelse {\n    return [null, msg];\n}\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 280,
+        "wires": [
+            [
+                "39da211091f3999a"
+            ],
+            [
+                "e6ad7812cc59e626"
+            ]
+        ]
+    },
+    {
+        "id": "e6ad7812cc59e626",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "addNewEmployee",
+        "func": "employee = msg.payload.entrance;\nstr = msg.payload.orders;\n\nconst headers = str.slice(0, str.indexOf(\"\\r\\n\")).split(';');\nconst rows = str.slice(str.indexOf(\"\\n\") + 1).split(\"\\r\\n\");\nconst arr = rows.map(function (row) {\n    const values = row.split(';');\n    const el = headers.reduce(function (object, header, index) {\n      object[header] = values[index];\n      return object;\n    }, {});\n    return el;\n});\n\narr.push({i: '1', DrinkId : '1', Count : '1', Employee: employee, Day : 'LUNDI'});\narr.push({i: '1', DrinkId : '1', Count : '0', Employee: employee, Day : 'MARDI'});\narr.push({i: '1', DrinkId : '1', Count : '0', Employee: employee, Day : 'MERCREDI'});\narr.push({i: '1', DrinkId : '1', Count : '0', Employee: employee, Day : 'JEUDI'});\narr.push({i: '1', DrinkId : '1', Count : '0', Employee: employee, Day : 'VENDREDI'});\n\narr.push({i: '1', DrinkId : '2', Count : '0', Employee: employee, Day : 'LUNDI'});\narr.push({i: '1', DrinkId : '2', Count : '1', Employee: employee, Day : 'MARDI'});\narr.push({i: '1', DrinkId : '2', Count : '0', Employee: employee, Day : 'MERCREDI'});\narr.push({i: '1', DrinkId : '2', Count : '0', Employee: employee, Day : 'JEUDI'});\narr.push({i: '1', DrinkId : '2', Count : '0', Employee: employee, Day : 'VENDREDI'});\n\narr.push({i: '1', DrinkId : '3', Count : '0', Employee: employee, Day : 'LUNDI'});\narr.push({i: '1', DrinkId : '3', Count : '0', Employee: employee, Day : 'MARDI'});\narr.push({i: '1', DrinkId : '3', Count : '1', Employee: employee, Day : 'MERCREDI'});\narr.push({i: '1', DrinkId : '3', Count : '0', Employee: employee, Day : 'JEUDI'});\narr.push({i: '1', DrinkId : '3', Count : '0', Employee: employee, Day : 'VENDREDI'});\n\narr.push({i: '1', DrinkId : '4', Count : '0', Employee: employee, Day : 'LUNDI'});\narr.push({i: '1', DrinkId : '4', Count : '0', Employee: employee, Day : 'MARDI'});\narr.push({i: '1', DrinkId : '4', Count : '0', Employee: employee, Day : 'MERCREDI'});\narr.push({i: '1', DrinkId : '4', Count : '1', Employee: employee, Day : 'JEUDI'});\narr.push({i: '1', DrinkId : '4', Count : '0', Employee: employee, Day : 'VENDREDI'});\n\narr.push({i: '1', DrinkId : '5', Count : '0', Employee: employee, Day : 'LUNDI'});\narr.push({i: '1', DrinkId : '5', Count : '0', Employee: employee, Day : 'MARDI'});\narr.push({i: '1', DrinkId : '5', Count : '0', Employee: employee, Day : 'MERCREDI'});\narr.push({i: '1', DrinkId : '5', Count : '0', Employee: employee, Day : 'JEUDI'});\narr.push({i: '1', DrinkId : '5', Count : '1', Employee: employee, Day : 'VENDREDI'});\n\nconst csvString = [\n    [\n      \"i\",\n      \"DrinkId\",\n      \"Count\",\n      \"Employee\",\n      \"Day\"\n    ],\n    ...arr.map(item => [\n      1,\n      item.DrinkId,\n      item.Count,\n      item.Employee,\n      item.Day\n    ])\n  ]\n   .map(e => e.join(\";\")) \n   .join(\"\\r\\n\");\n    \nmsg.payload = csvString;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 360,
+        "wires": [
+            [
+                "c438a8640a730ab1"
+            ]
+        ]
+    },
+    {
+        "id": "c438a8640a730ab1",
+        "type": "file",
+        "z": "da1569c66a6c9fab",
+        "name": "reWriteOrdersFile",
+        "filename": "data/orders.csv",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 1330,
+        "y": 360,
+        "wires": [
+            [
+                "39da211091f3999a"
+            ]
+        ]
+    },
+    {
+        "id": "a29dc0a1f38a0b67",
+        "type": "file in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "filename": "data/orders.csv",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 540,
+        "y": 220,
+        "wires": [
+            [
+                "978e6d6b4ea560a6"
+            ]
+        ]
+    },
+    {
+        "id": "978e6d6b4ea560a6",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'orders';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 220,
+        "wires": [
+            [
+                "169beef372c7a984"
+            ]
+        ]
+    },
+    {
+        "id": "e9370b5782eef007",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'entrance'\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 320,
+        "wires": [
+            [
+                "169beef372c7a984",
+                "5bce1436cd792d09"
+            ]
+        ]
+    },
+    {
+        "id": "169beef372c7a984",
+        "type": "join",
+        "z": "da1569c66a6c9fab",
+        "name": "joinAllMsg",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 850,
+        "y": 280,
+        "wires": [
+            [
+                "5f12ab30e19aa30c"
+            ]
+        ]
+    },
+    {
+        "id": "a16ad583d950cb5c",
+        "type": "mqtt out",
+        "z": "da1569c66a6c9fab",
+        "name": "NotifyEmployee",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "7c70bad8645c4635",
+        "x": 2360,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "f860fb219889d2df",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "prediction",
+        "func": "let employee = msg.payload.entrance;\nlet str = msg.payload.orders;\n\nconst headers = str.slice(0, str.indexOf(\"\\r\\n\")).split(';');\nconst rows = str.slice(str.indexOf(\"\\n\") + 1).split(\"\\r\\n\");\nconst arr = rows.map(function (row) {\n    const values = row.split(';');\n    const el = headers.reduce(function (object, header, index) {\n      object[header] = values[index];\n      return object;\n    }, {});\n    return el;\n});\n\nvar tab_jour=new Array(\"LUNDI\", \"MARDI\", \"MERCREDI\", \"JEUDI\", \"VENDREDI\");\nlet maxCountDrinkId = 0, maxCount = 0;\narr.forEach(line => {\n    if (line.Employee == employee && line['Day'] == tab_jour[new Date().getDay()-1]) {\n        if (line.Count > maxCount) {\n            maxCount = line.Count;\n            maxCountDrinkId = line.DrinkId;\n        }\n    } \n});\n\nmsg.payload = maxCountDrinkId;\nmsg.topic = \"COMPANY/NotifyEmployee/\" + employee;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2160,
+        "y": 300,
+        "wires": [
+            [
+                "a16ad583d950cb5c"
+            ]
+        ]
+    },
+    {
+        "id": "5bce1436cd792d09",
+        "type": "join",
+        "z": "da1569c66a6c9fab",
+        "name": "joinAllMsg",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1970,
+        "y": 300,
+        "wires": [
+            [
+                "f860fb219889d2df"
+            ]
+        ]
+    },
+    {
+        "id": "39da211091f3999a",
+        "type": "fs-ops-access",
+        "z": "da1569c66a6c9fab",
+        "name": "checkFile",
+        "path": "data",
+        "pathType": "str",
+        "filename": "orders.csv",
+        "filenameType": "str",
+        "read": true,
+        "write": true,
+        "throwerror": false,
+        "x": 1420,
+        "y": 280,
+        "wires": [
+            [
+                "1e342540e65ace52"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "1e342540e65ace52",
+        "type": "file in",
+        "z": "da1569c66a6c9fab",
+        "name": "",
+        "filename": "data/orders.csv",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 1600,
+        "y": 280,
+        "wires": [
+            [
+                "2a67a14cdc3b72dd"
+            ]
+        ]
+    },
+    {
+        "id": "2a67a14cdc3b72dd",
+        "type": "function",
+        "z": "da1569c66a6c9fab",
+        "name": "changeTopic",
+        "func": "msg.topic = 'orders';\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1770,
+        "y": 300,
+        "wires": [
+            [
+                "5bce1436cd792d09"
+            ]
+        ]
+    }
+]
