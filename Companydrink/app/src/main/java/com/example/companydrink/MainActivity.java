@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,6 +31,12 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +55,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        subText = (TextView)findViewById(R.id.subText);
+        employeeIdEdit = (EditText) findViewById(R.id.editText1);
+
+
+        if (readFromFile(MainActivity.this) == "" || readFromFile(MainActivity.this).compareTo("") == 0){
+            employeeId = 0;
+            employeeIdEdit.setText("0");
+        }
+        else {
+            employeeId = Integer.parseInt(readFromFile(MainActivity.this));
+            employeeIdEdit.setText(String.valueOf(employeeId));
+        }
+
         list.add("Café");
         list.add("Café au lait");
         list.add("Coca Cola");
@@ -60,9 +80,6 @@ public class MainActivity extends AppCompatActivity {
             NotificationManager manager =getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
-
-        subText = (TextView)findViewById(R.id.subText);
-        employeeIdEdit = (EditText) findViewById(R.id.editText1);
 
 
         String clientId = MqttClient.generateClientId();
@@ -90,9 +107,14 @@ public class MainActivity extends AppCompatActivity {
         employeeIdEdit.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
-                employeeId = Integer.parseInt(s.toString());
+                if (s.toString() == "" || s.toString().compareTo("") == 0){
+                    employeeId = 0;
+                    writeToFile("0", MainActivity.this);
+                } else {
+                    writeToFile(s.toString(), MainActivity.this);
+                    employeeId = Integer.parseInt(s.toString());
+                }
             }
-
 
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -169,49 +191,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void conn(View v){
-
-        try {
-            IMqttToken token = client.connect();
-            token.setActionCallback(new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(MainActivity.this,"connected!!",Toast.LENGTH_LONG).show();
-                    setSubscription();
-
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Toast.makeText(MainActivity.this,"connection failed!!",Toast.LENGTH_LONG).show();
-                }
-            });
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void disconn(View v){
-
-        try {
-            IMqttToken token = client.disconnect();
-            token.setActionCallback(new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    Toast.makeText(MainActivity.this,"Disconnected!!",Toast.LENGTH_LONG).show();
-                }
-
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Toast.makeText(MainActivity.this,"Could not diconnect!!",Toast.LENGTH_LONG).show();
-                }
-            });
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void cafe(View view) {
         radioBtnIndex = 1;
     }
@@ -241,5 +220,46 @@ public class MainActivity extends AppCompatActivity {
         } catch ( MqttException e) {
             e.printStackTrace();
         }
+    }
+
+    private void writeToFile(String data, Context context) {
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput("config.txt", Context.MODE_PRIVATE));
+            outputStreamWriter.write(data);
+            outputStreamWriter.close();
+        }
+        catch (IOException e) {
+            Log.e("Exception", "File write failed: " + e.toString());
+        }
+    }
+
+    private String readFromFile(Context context) {
+
+        String ret = "";
+
+        try {
+            InputStream inputStream = context.openFileInput("config.txt");
+
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append("\n").append(receiveString);
+                }
+
+                inputStream.close();
+                ret = stringBuilder.toString();
+            }
+        }
+        catch (FileNotFoundException e) {
+            Log.e("login activity", "File not found: " + e.toString());
+        } catch (IOException e) {
+            Log.e("login activity", "Can not read file: " + e.toString());
+        }
+
+        return ret.replaceAll("[^\\d.]", "");
     }
 }
